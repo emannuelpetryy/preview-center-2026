@@ -157,19 +157,47 @@ const fs = require('fs');
     // 4.2 Teste de Viewport Ultra-Estreito 320px
     await page.setViewport({ width: 320, height: 568, isMobile: true, hasTouch: true });
     await page.evaluate(() => window.scrollTo(0, 0));
-    const ultraNarrowWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-    console.log('Auditoria Viewport Ultra-Estreito 320px:', { ultraNarrowWidth });
-    if (ultraNarrowWidth > 320) {
-      throw new Error(`Overflow horizontal detectado no viewport 320px: largura ${ultraNarrowWidth}px`);
+    const ultraNarrowAudit = await page.evaluate(() => {
+      const docWidth = document.documentElement.scrollWidth;
+      const logo = document.querySelector('.brand-logo-img');
+      const logoRect = logo.getBoundingClientRect();
+      const tb = document.querySelector('.wix-cms-toolbar');
+      const tbInner = document.querySelector('.wix-cms-toolbar-inner');
+      return {
+        docWidth,
+        logoW: logoRect.width,
+        logoH: logoRect.height,
+        isLogoSquashed: logoRect.width < 50,
+        tbHeight: tb.offsetHeight,
+        tbInnerHeight: tbInner.offsetHeight,
+        isTbSpilling: tbInner.offsetHeight > tb.offsetHeight + 2
+      };
+    });
+    console.log('Auditoria Viewport Ultra-Estreito 320px:', ultraNarrowAudit);
+    if (ultraNarrowAudit.docWidth > 320) {
+      throw new Error(`Overflow horizontal detectado no viewport 320px: largura ${ultraNarrowAudit.docWidth}px`);
+    }
+    if (ultraNarrowAudit.isLogoSquashed) {
+      throw new Error(`Logo oficial foi deformada/espremida no viewport 320px: largura ${ultraNarrowAudit.logoW}px`);
+    }
+    if (ultraNarrowAudit.isTbSpilling) {
+      throw new Error(`Toolbar CMS extravasou a altura fixa de 36px no mobile: altura ${ultraNarrowAudit.tbInnerHeight}px`);
     }
 
-    // 4.3 Teste de Viewport Estreito 360px com Modo Tags Wix Ativado
+    // 4.3 Teste de Viewport Estreito 360px e 320px com Modo Tags Wix Ativado
     await page.setViewport({ width: 360, height: 640, isMobile: true, hasTouch: true });
     await page.click('#cmsToggleBtn');
-    const tagsMobileWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-    console.log('Auditoria Viewport Estreito 360px com tags ativadas:', { tagsMobileWidth });
-    if (tagsMobileWidth > 360) {
-      throw new Error(`Overflow horizontal detectado no modo tags em 360px: largura ${tagsMobileWidth}px`);
+    const tags360Width = await page.evaluate(() => document.documentElement.scrollWidth);
+    console.log('Auditoria Viewport Estreito 360px com tags ativadas:', { tags360Width });
+    if (tags360Width > 360) {
+      throw new Error(`Overflow horizontal detectado no modo tags em 360px: largura ${tags360Width}px`);
+    }
+
+    await page.setViewport({ width: 320, height: 568, isMobile: true, hasTouch: true });
+    const tags320Width = await page.evaluate(() => document.documentElement.scrollWidth);
+    console.log('Auditoria Viewport Ultra-Estreito 320px com tags ativadas:', { tags320Width });
+    if (tags320Width > 320) {
+      throw new Error(`Overflow horizontal detectado no modo tags em 320px: largura ${tags320Width}px`);
     }
     await page.click('#cmsToggleBtn');
 
@@ -669,6 +697,16 @@ const fs = require('fs');
     }
     if (!dynamicAudit.fisioMatches) {
       throw new Error('Fisioterapeuta responsável não foi atualizado dinamicamente via parâmetro.');
+    }
+
+    // 9.1 Teste de Responsividade com Parâmetros Longos em Viewports Mobile
+    for (const w of [390, 360, 320]) {
+      await page.setViewport({ width: w, height: 640, isMobile: true, hasTouch: true });
+      const dynamicDocW = await page.evaluate(() => document.documentElement.scrollWidth);
+      console.log(`Auditoria Responsiva Dinâmica em ${w}px com nome longo: docWidth = ${dynamicDocW}px`);
+      if (dynamicDocW > w) {
+        throw new Error(`Overflow horizontal detectado com parâmetros dinâmicos longos no viewport ${w}px: largura ${dynamicDocW}px`);
+      }
     }
 
     console.log('=== TODOS OS TESTES PASSARAM COM 100% DE SUCESSO NA REFORMULAÇÃO DA LP 03! ===');

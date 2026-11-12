@@ -233,6 +233,7 @@ button {
    -------------------------------------------------------------------------- */
 .wix-cms-toolbar {
   position: relative;
+  min-height: 36px;
   height: 36px;
   width: 100%;
   background: #030E22;
@@ -249,12 +250,15 @@ button {
   justify-content: center;
   gap: 16px;
   padding: 0 16px;
+  width: 100%;
+  max-width: var(--max-w-screen);
 }
 
 .cms-status-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .cms-live-badge {
@@ -266,11 +270,13 @@ button {
   border-radius: var(--radius-full);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 .cms-collection-pill {
   color: #CAD5E2;
   font-size: 0.74rem;
+  white-space: nowrap;
 }
 
 .cms-collection-pill strong {
@@ -286,6 +292,9 @@ button {
   font-size: 0.70rem;
   font-weight: 600;
   transition: var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .cms-toggle-btn:hover {
@@ -306,6 +315,8 @@ body.show-wix-tags [data-wix-tag]::after {
   vertical-align: middle;
   border: 1px solid #ADCAF7;
   pointer-events: none;
+  max-width: 100%;
+  word-break: break-all;
 }
 
 /* Tratamento de tags em containers complexos */
@@ -383,23 +394,28 @@ body.show-wix-tags .testimonial-media-wrap::after {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
+  flex: 1;
 }
 
 .brand-logo-link {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .brand-logo-img {
   height: 38px;
   width: auto;
   object-fit: contain;
+  display: block;
 }
 
 .header-vertical-divider {
   width: 1px;
   height: 24px;
   background: rgba(22, 99, 222, 0.35);
+  flex-shrink: 0;
 }
 
 .unit-dynamic-pill {
@@ -414,6 +430,8 @@ body.show-wix-tags .testimonial-media-wrap::after {
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.03em;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .unit-icon-pin {
@@ -425,6 +443,10 @@ body.show-wix-tags .testimonial-media-wrap::after {
 
 .unit-dynamic-pill .unit-name-text {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  display: inline-block;
 }
 
 .header-right-stack {
@@ -1982,6 +2004,17 @@ body.show-wix-tags .testimonial-media-wrap::after {
     display: none;
   }
 
+  .header-left-stack {
+    gap: 10px;
+    max-width: 100%;
+  }
+
+  .unit-dynamic-pill {
+    padding: 3px 10px;
+    font-size: 0.74rem;
+    max-width: calc(100% - 130px);
+  }
+
   .hero-ciatica-grid {
     grid-template-columns: 1fr;
     gap: 36px;
@@ -2009,7 +2042,12 @@ body.show-wix-tags .testimonial-media-wrap::after {
   }
 
   .unit-grid-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .unit-clinic-card,
+  .unit-team-card {
+    min-width: 0;
   }
 
   .cta-banner-card {
@@ -2031,6 +2069,21 @@ body.show-wix-tags .testimonial-media-wrap::after {
 @media (max-width: 480px) {
   :root {
     --section-padding-v: 36px;
+  }
+
+  .wix-cms-toolbar-inner {
+    gap: 8px;
+    padding: 0 10px;
+    justify-content: space-between;
+  }
+
+  .cms-collection-pill {
+    display: none;
+  }
+
+  .cms-toggle-btn {
+    padding: 2px 8px;
+    font-size: 0.68rem;
   }
 
   .hero-title {
@@ -2066,9 +2119,61 @@ body.show-wix-tags .testimonial-media-wrap::after {
   .photo-gallery-stack {
     display: none;
   }
+
+  .unit-clinic-card,
+  .unit-team-card {
+    padding: 18px 14px;
+  }
+
+  .info-item-row {
+    gap: 8px;
+  }
+
+  .info-value,
+  .member-name {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
 }
 
 @media (max-width: 380px) {
+  .brand-logo-img {
+    height: 32px;
+  }
+
+  .header-vertical-divider {
+    height: 20px;
+  }
+
+  .unit-dynamic-pill {
+    padding: 2px 8px;
+    font-size: 0.70rem;
+    max-width: calc(100% - 100px);
+  }
+
+  .cms-status-indicator {
+    gap: 4px;
+  }
+
+  .cms-live-badge {
+    font-size: 0.62rem;
+    padding: 1px 5px;
+  }
+
+  .cms-collection-pill {
+    font-size: 0.64rem;
+  }
+
+  .cms-toggle-btn {
+    padding: 2px 6px;
+    font-size: 0.64rem;
+  }
+
+  .unit-clinic-card,
+  .unit-team-card {
+    padding: 16px 10px;
+  }
+
   .mobile-unit-title {
     font-size: 0.68rem;
   }

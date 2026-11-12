@@ -510,23 +510,27 @@ body.show-wix-tags .testimonial-media-wrap::after {
 .hero-ciatica-section {
   position: relative;
   background-color: #061A3B;
-  background-image: radial-gradient(circle at 75% 25%, rgba(22, 99, 222, 0.25) 0%, rgba(6, 26, 59, 0) 70%);
-  padding-top: 52px;
-  padding-bottom: 60px;
+  background-image: radial-gradient(circle at 78% 38%, rgba(22, 99, 222, 0.28) 0%, rgba(6, 26, 59, 0) 68%);
+  padding-top: 56px;
+  padding-bottom: 48px;
   overflow: hidden;
   border-bottom: 1px solid var(--color-border-header);
 }
 
 .hero-ciatica-grid {
-  display: grid;
-  grid-template-columns: 1.15fr 0.95fr;
-  gap: 44px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  position: relative;
+  z-index: 2;
 }
 
 .hero-ciatica-copy {
   display: flex;
   flex-direction: column;
+  max-width: 700px;
+  position: relative;
+  z-index: 3;
 }
 
 .hero-tech-kicker {
@@ -662,96 +666,69 @@ body.show-wix-tags .testimonial-media-wrap::after {
   flex-shrink: 0;
 }
 
-/* Console Biomecânico Escuro (#09295E) */
+/* Palco Anatômico Integrado (Sem Card em 2 Colunas — Full-Bleed Dark Scene) */
 .hero-dark-console {
-  background-color: var(--color-blue-console);
-  border: 1px solid var(--color-border-dark-tech);
-  border-radius: var(--radius-xl);
-  padding: 16px;
-  box-shadow: var(--shadow-dark-console);
-  position: relative;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  position: static;
+  width: 100%;
 }
 
 .console-hud-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 8px 14px 8px;
-  border-bottom: 1px solid rgba(22, 99, 222, 0.25);
-  margin-bottom: 12px;
-}
-
-.console-status-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.hud-live-pulse {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--color-emerald-cta);
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.9);
-}
-
-.hud-label-mono {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #E2E8F0;
-  letter-spacing: 0.02em;
-}
-
-.console-hud-badge {
-  background: rgba(22, 99, 222, 0.35);
-  border: 1px solid rgba(96, 165, 250, 0.4);
-  color: var(--color-blue-tech-light);
-  font-size: 0.68rem;
-  font-weight: 800;
-  padding: 3px 8px;
-  border-radius: var(--radius-xs);
-  letter-spacing: 0.05em;
+  display: none;
 }
 
 .console-image-frame {
-  position: relative;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  background: #030E22;
-  aspect-ratio: 4 / 3;
+  position: absolute;
+  top: -16px;
+  right: -24px;
+  width: 540px;
+  height: 410px;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .console-xray-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center center;
   display: block;
+  opacity: 0.94;
+  mask-image: radial-gradient(closest-side at 52% 50%, #000 38%, transparent 100%);
+  -webkit-mask-image: radial-gradient(closest-side at 52% 50%, #000 38%, transparent 100%);
 }
 
-/* Badges Técnicas Flutuantes no Console */
+/* Badges Técnicas Flutuantes no Palco Escuro */
 .hud-floating-tag {
   position: absolute;
-  background: rgba(6, 26, 59, 0.9);
+  background: rgba(6, 26, 59, 0.92);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(22, 99, 222, 0.4);
+  border: 1px solid rgba(22, 99, 222, 0.45);
   border-radius: var(--radius-full);
-  padding: 6px 12px;
+  padding: 6px 14px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  z-index: 2;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  z-index: 3;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
 }
 
 .hud-tag-top {
-  top: 14px;
-  left: 14px;
+  top: 28px;
+  left: 36px;
 }
 
 .hud-tag-bottom {
-  bottom: 14px;
-  right: 14px;
+  bottom: 36px;
+  right: 40px;
 }
 
 .hud-tag-dot {
@@ -774,16 +751,29 @@ body.show-wix-tags .testimonial-media-wrap::after {
 .console-specs-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-top: 14px;
+  gap: 0;
+  margin-top: 8px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(22, 99, 222, 0.35);
+  position: relative;
+  z-index: 3;
 }
 
 .console-spec-card {
-  background: var(--color-blue-console-card);
-  border: 1px solid rgba(22, 99, 222, 0.3);
-  border-radius: var(--radius-md);
-  padding: 10px 8px;
-  text-align: center;
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(22, 99, 222, 0.25);
+  border-radius: 0;
+  padding: 4px 24px;
+  text-align: left;
+}
+
+.console-spec-card:first-child {
+  padding-left: 0;
+}
+
+.console-spec-card:last-child {
+  border-right: none;
 }
 
 .spec-label-dim {
@@ -1977,8 +1967,12 @@ body.show-wix-tags .testimonial-media-wrap::after {
    -------------------------------------------------------------------------- */
 @media (max-width: 1024px) {
   .hero-ciatica-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
+    gap: 28px;
+  }
+
+  .console-image-frame {
+    width: 440px;
+    height: 440px;
   }
 
   .hero-title {
@@ -2016,8 +2010,27 @@ body.show-wix-tags .testimonial-media-wrap::after {
   }
 
   .hero-ciatica-grid {
-    grid-template-columns: 1fr;
-    gap: 36px;
+    gap: 24px;
+  }
+
+  .console-image-frame {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 100%;
+    max-width: 520px;
+    height: 260px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+  }
+
+  .console-xray-img {
+    mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, #000 55%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, #000 55%, transparent 100%);
+  }
+
+  .console-spec-card {
+    padding: 8px 12px;
   }
 
   .hero-title {

@@ -375,26 +375,42 @@ const fs = require('fs');
       throw new Error('Layout do Bento Grid incorreto: Bloco 1 deve ficar à esquerda e Blocos 2 e 3 empilhados à direita no desktop');
     }
 
-    // ITEM 4: COMPARATIVO BIOMECÂNICO (ANTES VS. DEPOIS)
-    console.log('5.4 Validando Comparativo Biomecânico: Antes vs. Depois...');
+    // ITEM 4: COMPARATIVO BIOMECÂNICO (SPLIT CARD COMERCIAL DARK TECH)
+    console.log('5.4 Validando Comparativo Biomecânico: Split Card Antes vs. Depois...');
     const compAudit = await page.evaluate(() => {
       const section = document.querySelector('.comparison-section');
       if (!section) return { exists: false };
+      const sectionBg = window.getComputedStyle(section).backgroundColor;
       const cardBefore = section.querySelector('.comp-card-before');
       const cardAfter = section.querySelector('.comp-card-after');
+      const hasOldSvg = !!section.querySelector('.comp-svg-diagram') || section.innerHTML.includes('VÉRTEBRA LOMBAR L4');
+
+      const beforeImg = cardBefore ? cardBefore.querySelector('img.comp-medical-img') : null;
+      const afterImg = cardAfter ? cardAfter.querySelector('img.comp-medical-img') : null;
 
       const beforeText = cardBefore ? (cardBefore.textContent + ' ' + cardBefore.innerText) : '';
       const afterText = cardAfter ? (cardAfter.textContent + ' ' + cardAfter.innerText) : '';
 
       return {
         exists: true,
+        sectionBg,
+        isDarkBg: sectionBg === 'rgb(6, 26, 59)',
+        hasOldSvg,
         hasBothCards: !!cardBefore && !!cardAfter,
-        hasBeforeTitle: beforeText.includes('Antes (Raiz Sufocada)'),
-        hasBeforePhrase: beforeText.includes('Vértebras coladas, disco comprimido, dor constante na perna.'),
-        hasBeforeTags: beforeText.includes('Pinçamento da raiz L4-S1') && beforeText.includes('Queimação irradiada') && beforeText.includes('Trava ao caminhar'),
-        hasAfterTitle: afterText.includes('Depois da Maca'),
-        hasAfterPhrase: afterText.includes('Espaço restaurado, nervo desimpedido, volta dos movimentos sem dor.'),
-        hasAfterTags: afterText.includes('Espaço discal recuperado') && afterText.includes('Nervo ciático livre') && afterText.includes('Mobilidade restaurada')
+        hasBeforeBadge: beforeText.includes('Sob Compressão Mecânica'),
+        hasBeforeTitle: beforeText.includes('Antes: Raiz Nervosa Sufocada'),
+        hasBeforeImg: !!beforeImg && (beforeImg.getAttribute('src') || '').includes('comparativo-antes-compressao.jpg') && beforeImg.complete && beforeImg.naturalWidth > 0,
+        hasBeforeBullets:
+          beforeText.includes('Vértebras coladas e perda do espaço discal') &&
+          beforeText.includes('Nervo ciático comprimido gerando dor que desce para a perna') &&
+          beforeText.includes('Inflamação contínua e travamento nos movimentos'),
+        hasAfterBadge: afterText.includes('Espaço Articular Restaurado'),
+        hasAfterTitle: afterText.includes('Depois: Descompressão Dinâmica Computadorizada'),
+        hasAfterImg: !!afterImg && (afterImg.getAttribute('src') || '').includes('comparativo-depois-descompressao.jpg') && afterImg.complete && afterImg.naturalWidth > 0,
+        hasAfterBullets:
+          afterText.includes('Afastamento micrométrico controlado por computador') &&
+          afterText.includes('Raiz do nervo ciático desimpedida e alívio da queimação') &&
+          afterText.includes('Retorno gradual da mobilidade e alívio sem cirurgia')
       };
     });
     console.log('Auditoria do Comparativo Antes vs. Depois:', compAudit);
@@ -402,11 +418,17 @@ const fs = require('fs');
     if (!compAudit.exists || !compAudit.hasBothCards) {
       throw new Error('Seção de Comparativo (.comparison-section) ou containers Antes/Depois não encontrados.');
     }
-    if (!compAudit.hasBeforeTitle || !compAudit.hasBeforePhrase || !compAudit.hasBeforeTags) {
-      throw new Error('Container "Antes (Raiz Sufocada)" não contém todos os textos e tags solicitados.');
+    if (!compAudit.isDarkBg) {
+      throw new Error(`Seção de Comparativo deve usar fundo Azul Noite #061A3B. Atual: ${compAudit.sectionBg}`);
     }
-    if (!compAudit.hasAfterTitle || !compAudit.hasAfterPhrase || !compAudit.hasAfterTags) {
-      throw new Error('Container "Depois da Maca" não contém todos os textos e tags solicitados.');
+    if (compAudit.hasOldSvg) {
+      throw new Error('VIOLAÇÃO: Desenho SVG tosco ("VÉRTEBRA LOMBAR L4") ainda está presente na seção #comparativo.');
+    }
+    if (!compAudit.hasBeforeBadge || !compAudit.hasBeforeTitle || !compAudit.hasBeforeImg || !compAudit.hasBeforeBullets) {
+      throw new Error('Container "Antes: Raiz Nervosa Sufocada" não contém badge, título, imagem médica 3D ou os 3 pontos objetivos.');
+    }
+    if (!compAudit.hasAfterBadge || !compAudit.hasAfterTitle || !compAudit.hasAfterImg || !compAudit.hasAfterBullets) {
+      throw new Error('Container "Depois: Descompressão Dinâmica Computadorizada" não contém badge, título, imagem médica 3D ou os 3 pontos objetivos.');
     }
 
     // ITEM 5: PROVA SOCIAL & UNIDADE ARAUCÁRIA

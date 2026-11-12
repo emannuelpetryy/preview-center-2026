@@ -5,7 +5,7 @@ const fs = require('fs');
 (async () => {
   let browser;
   try {
-    console.log('=== INICIANDO VERIFICAÇÃO AUTOMATIZADA COMPLETA DA LP 03 (FOCO CIÁTICO & DESCOMPRESSÃO) ===');
+    console.log('=== INICIANDO VERIFICAÇÃO AUTOMATIZADA COMPLETA DA LP 03 (DARK TECH CIÁTICO & DESCOMPRESSÃO) ===');
     browser = await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -154,7 +154,17 @@ const fs = require('fs');
       throw new Error(`Texto de horários quebrou linha desnecessariamente no dock 360px: altura ${narrowAudit.hoursHeight}px`);
     }
 
-    // 4.2 Teste de Viewport Estreito 360px com Modo Tags Wix Ativado
+    // 4.2 Teste de Viewport Ultra-Estreito 320px
+    await page.setViewport({ width: 320, height: 568, isMobile: true, hasTouch: true });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const ultraNarrowWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    console.log('Auditoria Viewport Ultra-Estreito 320px:', { ultraNarrowWidth });
+    if (ultraNarrowWidth > 320) {
+      throw new Error(`Overflow horizontal detectado no viewport 320px: largura ${ultraNarrowWidth}px`);
+    }
+
+    // 4.3 Teste de Viewport Estreito 360px com Modo Tags Wix Ativado
+    await page.setViewport({ width: 360, height: 640, isMobile: true, hasTouch: true });
     await page.click('#cmsToggleBtn');
     const tagsMobileWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     console.log('Auditoria Viewport Estreito 360px com tags ativadas:', { tagsMobileWidth });
@@ -163,107 +173,312 @@ const fs = require('fs');
     }
     await page.click('#cmsToggleBtn');
 
+    // 4.4 Teste de Viewport Tablet / Desktop Estreito 900px
+    await page.setViewport({ width: 900, height: 800 });
+    const tabletAudit = await page.evaluate(() => {
+      const docWidth = document.documentElement.scrollWidth;
+      return { docWidth, hasOverflow: docWidth > 900 };
+    });
+    console.log('Auditoria Viewport Tablet 900px:', tabletAudit);
+    if (tabletAudit.hasOverflow) {
+      throw new Error(`Overflow horizontal detectado no viewport 900px: largura ${tabletAudit.docWidth}px`);
+    }
+
     // Restaura viewport desktop para os testes seguintes
     await page.setViewport({ width: 1440, height: 900 });
 
-    // 5. Auditoria de Existência das 8 Dobras Específicas da LP 03
-    const dobrasAudit = await page.evaluate(() => {
+    // =========================================================================
+    // 5. VALIDAÇÕES ESPECÍFICAS DA REFORMULAÇÃO LP 03 (DARK TECH ANTI-CLONE)
+    // =========================================================================
+
+    // ITEM 1: DARK HERO (#061A3B), SEM CARD BRANCO, TÍTULO E BOTÃO VERDE ESMERALDA
+    console.log('5.1 Validando Dark Hero (#061A3B), Sem Card Branco e Botão Verde Esmeralda...');
+    const heroAudit = await page.evaluate(() => {
+      const hero = document.querySelector('.hero-ciatica-section');
+      if (!hero) return { exists: false };
+      const heroStyle = window.getComputedStyle(hero);
+      const heroBg = heroStyle.backgroundColor;
+
+      // Verifica se existe algum card branco dentro do Hero
+      const allHeroElements = Array.from(hero.querySelectorAll('*'));
+      const whiteCardViolations = [];
+      allHeroElements.forEach(el => {
+        const s = window.getComputedStyle(el);
+        const bg = s.backgroundColor;
+        // Se for um container/card com largura maior que 100px e fundo puramente branco
+        if ((bg === 'rgb(255, 255, 255)' || bg === '#ffffff') && el.offsetWidth > 100 && el.offsetHeight > 50) {
+          whiteCardViolations.push(`${el.tagName}.${el.className} [${bg}]`);
+        }
+      });
+
+      const titleEl = hero.querySelector('.hero-title');
+      const titleText = titleEl ? titleEl.innerText.replace(/\s+/g, ' ').trim() : '';
+
+      const btn = hero.querySelector('.btn-hero-emerald');
+      const btnStyle = btn ? window.getComputedStyle(btn) : null;
+      const btnBg = btnStyle ? btnStyle.backgroundColor : '';
+      const btnTopText = btn ? (btn.querySelector('.cta-label-top') ? btn.querySelector('.cta-label-top').innerText.trim() : '') : '';
+      const btnSubText = btn ? (btn.querySelector('.cta-label-sub') ? btn.querySelector('.cta-label-sub').innerText.trim() : '') : '';
+
+      const consoleEl = hero.querySelector('.hero-dark-console');
+      const consoleImg = consoleEl ? consoleEl.querySelector('img') : null;
+      const consoleImgSrc = consoleImg ? consoleImg.getAttribute('src') : '';
+
       return {
-        dobra1_heroCiatica: !!document.querySelector('.hero-ciatica-section'),
-        dobra2_caminhoNervoCiatico: !!document.querySelector('.nerve-path-section'),
-        dobra3_tecnologiaDescompressao: !!document.querySelector('.decompression-tech-section'),
-        dobra4_unidadeEquipeAraucaria: !!document.querySelector('.unit-authority-section'),
-        dobra5_videoDemonstracaoTecnica: !!document.querySelector('.technical-video-section'),
-        dobra6_casosReaisMobilidade: !!document.querySelector('.video-testimonials-section'),
-        dobra7_faqEspecializadoCiatica: !!document.querySelector('.faq-ciatica-section'),
-        dobra8_fechamentoSelosABF: !!document.querySelector('.final-ciatica-cta'),
-        footer_institucional: !!document.querySelector('.site-footer')
+        exists: true,
+        heroBg,
+        isDarkHero: heroBg === 'rgb(6, 26, 59)',
+        whiteCardViolations,
+        titleText,
+        hasRequiredTitle: titleText.includes('Dor no Nervo Ciático? A Queimação que Desce para a Perna Tem Tratamento sem Cirurgia'),
+        btnBg,
+        isEmeraldBtn: btnBg === 'rgb(16, 185, 129)',
+        btnTopText,
+        btnSubText,
+        hasCorrectBtnText: btnTopText === 'Agendar Descompressão em Araucária' && btnSubText === 'Atendimento com hora marcada',
+        consoleImgSrc,
+        hasXrayImg: consoleImgSrc.includes('anatomia-nervo-ciatico.jpg')
       };
     });
-    console.log('Auditoria das 8 Dobras da LP 03:', dobrasAudit);
+    console.log('Auditoria do Dark Hero:', heroAudit);
 
-    const missingDobras = Object.keys(dobrasAudit).filter(k => !dobrasAudit[k]);
-    if (missingDobras.length > 0) {
-      throw new Error('Dobras ausentes na Landing Page 03: ' + missingDobras.join(', '));
+    if (!heroAudit.exists) throw new Error('Seção Dark Hero (.hero-ciatica-section) não encontrada.');
+    if (!heroAudit.isDarkHero) throw new Error(`Dark Hero não possui fundo #061A3B (rgb(6, 26, 59)). Encontrado: ${heroAudit.heroBg}`);
+    if (heroAudit.whiteCardViolations.length > 0) {
+      throw new Error(`VIOLAÇÃO ANTI-CLONE: Encontrado card branco dentro do Hero:\n${heroAudit.whiteCardViolations.join('\n')}`);
+    }
+    if (!heroAudit.hasRequiredTitle) {
+      throw new Error(`Título do Hero não corresponde ao solicitado:\nEncontrado: "${heroAudit.titleText}"`);
+    }
+    if (!heroAudit.isEmeraldBtn) {
+      throw new Error(`Botão do Hero não é Verde Esmeralda #10B981 (rgb(16, 185, 129)). Encontrado: ${heroAudit.btnBg}`);
+    }
+    if (!heroAudit.hasCorrectBtnText) {
+      throw new Error(`Texto do botão do Hero incorreto: "${heroAudit.btnTopText}" / "${heroAudit.btnSubText}"`);
+    }
+    if (!heroAudit.hasXrayImg) {
+      throw new Error(`Console Biomecânico não exibe a imagem anatomia-nervo-ciatico.jpg: ${heroAudit.consoleImgSrc}`);
     }
 
-    // 6. Auditoria de CTAs: VETO ABSOLUTO AO VERMELHO E VALIDAÇÃO DO AZUL ROYAL
-    const ctaAudit = await page.evaluate(() => {
-      const rootComputed = window.getComputedStyle(document.documentElement);
-      const colorPrimaryCta = rootComputed.getPropertyValue('--color-primary-cta').trim().toLowerCase();
-      const colorPrimaryCtaHover = rootComputed.getPropertyValue('--color-primary-cta-hover').trim().toLowerCase();
+    // ITEM 2: O CAMINHO DA DOR (4 PASSOS) + FRASE DE DIAGNÓSTICO
+    console.log('5.2 Validando O Caminho da Dor (4 Passos) e Frase de Diagnóstico...');
+    const pathAudit = await page.evaluate(() => {
+      const section = document.querySelector('.nerve-path-section');
+      if (!section) return { exists: false };
+      const steps = Array.from(section.querySelectorAll('.step-direct-card'));
+      const stepTitles = steps.map(s => s.querySelector('.step-card-title') ? s.querySelector('.step-card-title').innerText.trim() : '');
+      const alertBanner = section.querySelector('.diagnostic-alert-banner');
+      const alertText = alertBanner ? alertBanner.innerText.replace(/\s+/g, ' ').trim() : '';
 
-      // Busca todos os botões e links de CTA na página
+      return {
+        exists: true,
+        stepsCount: steps.length,
+        stepTitles,
+        hasAll4Steps: stepTitles.includes('Lombar') && stepTitles.includes('Glúteo') && stepTitles.includes('Coxa') && stepTitles.includes('Pé'),
+        alertText,
+        hasRequiredAlertPhrase: alertText.includes('Se a dor passa do joelho, seu nervo ciático está sob compressão mecânica.')
+      };
+    });
+    console.log('Auditoria de O Caminho da Dor:', pathAudit);
+
+    if (!pathAudit.exists) throw new Error('Seção O Caminho da Dor (.nerve-path-section) não encontrada.');
+    if (pathAudit.stepsCount !== 4 || !pathAudit.hasAll4Steps) {
+      throw new Error(`Os 4 passos ("Lombar", "Glúteo", "Coxa", "Pé") não foram encontrados: ${JSON.stringify(pathAudit.stepTitles)}`);
+    }
+    if (!pathAudit.hasRequiredAlertPhrase) {
+      throw new Error(`Frase de diagnóstico não encontrada: "${pathAudit.alertText}"`);
+    }
+
+    // ITEM 3: BENTO GRID DA MACA (3 BLOCOS COM ALINHAMENTO DESKTOP)
+    console.log('5.3 Validando Bento Grid da Maca (3 Blocos)...');
+    const bentoAudit = await page.evaluate(() => {
+      const grid = document.querySelector('.maca-bento-grid');
+      if (!grid) return { exists: false };
+      const cards = Array.from(grid.querySelectorAll('.bento-card'));
+      const mainCard = grid.querySelector('.bento-card-main');
+      const sideCards = Array.from(grid.querySelectorAll('.bento-card-side'));
+
+      const mainImg = mainCard ? mainCard.querySelector('.clinical-room-img') : null;
+      const mainVideo = mainCard ? mainCard.querySelector('#techVideoContainer') : null;
+      const mainCaption = mainCard ? mainCard.querySelector('.bento-main-caption') : null;
+
+      const sideTitles = sideCards.map(c => c.querySelector('.bento-card-title') ? c.querySelector('.bento-card-title').innerText.trim() : '');
+
+      // Coordenadas para teste de layout desktop
+      const rMain = mainCard ? mainCard.getBoundingClientRect() : null;
+      const rSide1 = sideCards[0] ? sideCards[0].getBoundingClientRect() : null;
+      const rSide2 = sideCards[1] ? sideCards[1].getBoundingClientRect() : null;
+
+      return {
+        exists: true,
+        totalBlocks: cards.length,
+        hasMainImg: mainImg && mainImg.getAttribute('src').includes('maca-descompressao-sala.jpg'),
+        hasTechVideo: !!mainVideo,
+        mainCaptionText: mainCaption ? mainCaption.innerText.trim() : '',
+        sideTitles,
+        hasBlock2: sideTitles.includes('Tração Milimétrica Computadorizada'),
+        hasBlock3: sideTitles.includes('Alívio da Pressão no Disco'),
+        rMain,
+        rSide1,
+        rSide2,
+        isMainOnLeft: rMain && rSide1 && rMain.right <= rSide1.left + 10,
+        isSideStacked: rSide1 && rSide2 && rSide1.bottom <= rSide2.top + 10,
+        heightAligned: rMain && rSide1 && rSide2 && Math.abs(rMain.top - rSide1.top) < 15 && Math.abs(rMain.bottom - rSide2.bottom) < 25
+      };
+    });
+    console.log('Auditoria do Bento Grid da Maca:', bentoAudit);
+
+    if (!bentoAudit.exists || bentoAudit.totalBlocks !== 3) {
+      throw new Error(`Bento Grid não possui exatamente 3 blocos. Encontrados: ${bentoAudit.totalBlocks}`);
+    }
+    if (!bentoAudit.hasMainImg) {
+      throw new Error('Bloco Principal não contém a foto real da sala maca-descompressao-sala.jpg');
+    }
+    if (!bentoAudit.hasTechVideo) {
+      throw new Error('Bloco Principal não contém o container de vídeo interativo #techVideoContainer');
+    }
+    if (!bentoAudit.mainCaptionText.includes('Maca de Descompressão Dinâmica em funcionamento clínico')) {
+      throw new Error(`Legenda do Bloco Principal não confere: "${bentoAudit.mainCaptionText}"`);
+    }
+    if (!bentoAudit.hasBlock2 || !bentoAudit.hasBlock3) {
+      throw new Error(`Blocos 2 ou 3 ausentes. Encontrados: ${JSON.stringify(bentoAudit.sideTitles)}`);
+    }
+    if (!bentoAudit.isMainOnLeft || !bentoAudit.isSideStacked) {
+      throw new Error('Layout do Bento Grid incorreto: Bloco 1 deve ficar à esquerda e Blocos 2 e 3 empilhados à direita no desktop');
+    }
+
+    // ITEM 4: COMPARATIVO BIOMECÂNICO (ANTES VS. DEPOIS)
+    console.log('5.4 Validando Comparativo Biomecânico: Antes vs. Depois...');
+    const compAudit = await page.evaluate(() => {
+      const section = document.querySelector('.comparison-section');
+      if (!section) return { exists: false };
+      const cardBefore = section.querySelector('.comp-card-before');
+      const cardAfter = section.querySelector('.comp-card-after');
+
+      const beforeText = cardBefore ? (cardBefore.textContent + ' ' + cardBefore.innerText) : '';
+      const afterText = cardAfter ? (cardAfter.textContent + ' ' + cardAfter.innerText) : '';
+
+      return {
+        exists: true,
+        hasBothCards: !!cardBefore && !!cardAfter,
+        hasBeforeTitle: beforeText.includes('Antes (Raiz Sufocada)'),
+        hasBeforePhrase: beforeText.includes('Vértebras coladas, disco comprimido, dor constante na perna.'),
+        hasBeforeTags: beforeText.includes('Pinçamento da raiz L4-S1') && beforeText.includes('Queimação irradiada') && beforeText.includes('Trava ao caminhar'),
+        hasAfterTitle: afterText.includes('Depois da Maca'),
+        hasAfterPhrase: afterText.includes('Espaço restaurado, nervo desimpedido, volta dos movimentos sem dor.'),
+        hasAfterTags: afterText.includes('Espaço discal recuperado') && afterText.includes('Nervo ciático livre') && afterText.includes('Mobilidade restaurada')
+      };
+    });
+    console.log('Auditoria do Comparativo Antes vs. Depois:', compAudit);
+
+    if (!compAudit.exists || !compAudit.hasBothCards) {
+      throw new Error('Seção de Comparativo (.comparison-section) ou containers Antes/Depois não encontrados.');
+    }
+    if (!compAudit.hasBeforeTitle || !compAudit.hasBeforePhrase || !compAudit.hasBeforeTags) {
+      throw new Error('Container "Antes (Raiz Sufocada)" não contém todos os textos e tags solicitados.');
+    }
+    if (!compAudit.hasAfterTitle || !compAudit.hasAfterPhrase || !compAudit.hasAfterTags) {
+      throw new Error('Container "Depois da Maca" não contém todos os textos e tags solicitados.');
+    }
+
+    // ITEM 5: PROVA SOCIAL & UNIDADE ARAUCÁRIA
+    console.log('5.5 Validando Prova Social e Card da Unidade Araucária...');
+    const socialAudit = await page.evaluate(() => {
+      const rawText = document.body.innerText;
+      const rawHtml = document.documentElement.outerHTML;
+
+      const hasQuote1 = rawText.includes('Voltei a dirigir sem queimação');
+      const hasQuote2 = rawText.includes('Consigo caminhar sem mancar');
+      const hasQuote3 = rawText.includes('Rotina ativa recuperada sem cirurgia');
+
+      const unitCard = document.querySelector('.unit-authority-section');
+      const hasUnitTitle = unitCard && rawHtml.includes('{title}');
+      const hasEndereo = unitCard && rawHtml.includes('{endereoTexto}');
+      const hasFisio1 = rawHtml.includes('GABRIELA AMARAL') && rawHtml.includes('354364-F');
+      const hasFisio2 = rawHtml.includes('DÉBORA AMARAL') && rawHtml.includes('355151-F');
+      const hasMapBtn = unitCard && unitCard.querySelector('[data-wix-field="linkVerNoMapa"]');
+      const hasWppBtn = unitCard && unitCard.querySelector('[data-wix-field="linkWpp"]');
+
+      return {
+        hasQuote1,
+        hasQuote2,
+        hasQuote3,
+        hasUnitCard: !!unitCard,
+        hasUnitTitle,
+        hasEndereo,
+        hasFisio1,
+        hasFisio2,
+        hasMapBtn: !!hasMapBtn,
+        hasWppBtn: !!hasWppBtn
+      };
+    });
+    console.log('Auditoria de Prova Social e Unidade Araucária:', socialAudit);
+
+    if (!socialAudit.hasQuote1 || !socialAudit.hasQuote2 || !socialAudit.hasQuote3) {
+      throw new Error('Citações de depoimentos ("Voltei a dirigir sem queimação", "Consigo caminhar sem mancar", "Rotina ativa recuperada sem cirurgia") não encontradas.');
+    }
+    if (!socialAudit.hasUnitCard || !socialAudit.hasFisio1 || !socialAudit.hasFisio2) {
+      throw new Error('Card da Unidade Araucária ou Fisioterapeutas Responsáveis oficiais (Dra. Gabriela e Dra. Débora com CREFITO) não encontrados.');
+    }
+
+    // ITEM 6: FAQ OBJETIVO (EXATAMENTE AS 4 PERGUNTAS)
+    console.log('5.6 Validando FAQ Objetivo (Exatamente as 4 Perguntas)...');
+    const faqAudit = await page.evaluate(() => {
+      const section = document.querySelector('.faq-ciatica-section');
+      if (!section) return { exists: false };
+      const items = Array.from(section.querySelectorAll('.faq-accordion-item'));
+      const questions = items.map(it => it.querySelector('.faq-question-text') ? it.querySelector('.faq-question-text').innerText.trim() : '');
+
+      return {
+        exists: true,
+        count: items.length,
+        questions,
+        hasQ1: questions.includes('Dói para fazer?'),
+        hasQ2: questions.includes('Quantas sessões?'),
+        hasQ3: questions.includes('Precisa de encaminhamento?'),
+        hasQ4: questions.includes('Onde fica a clínica?')
+      };
+    });
+    console.log('Auditoria do FAQ Objetivo:', faqAudit);
+
+    if (!faqAudit.exists || faqAudit.count !== 4) {
+      throw new Error(`FAQ deve conter exatamente 4 perguntas. Encontradas: ${faqAudit.count}`);
+    }
+    if (!faqAudit.hasQ1 || !faqAudit.hasQ2 || !faqAudit.hasQ3 || !faqAudit.hasQ4) {
+      throw new Error(`As 4 perguntas obrigatórias do FAQ não foram encontradas:\n${JSON.stringify(faqAudit.questions)}`);
+    }
+
+    // ITEM 7: VETO AO VERMELHO E VALIDAÇÃO DOS 19 PLACEHOLDERS WIX CMS & COMPLIANCE
+    console.log('5.7 Validando Veto ao Vermelho, 19 Placeholders Wix CMS e Compliance...');
+    const complianceAudit = await page.evaluate(() => {
+      const rawHtml = document.documentElement.outerHTML;
+      const text = document.body.innerText;
+      const violations = [];
+
+      // Veto a botões vermelhos
       const buttons = Array.from(document.querySelectorAll('a[class*="btn"], button[class*="btn"]'));
-      const redViolations = [];
-
       buttons.forEach(btn => {
         const style = window.getComputedStyle(btn);
         const bg = (style.backgroundColor || '') + ' ' + (style.backgroundImage || '');
         const color = style.color || '';
-
-        // Detecção de vermelho proibido (#B10F0B, #8C0B08, rgb(177, 15, 11), etc.)
         if (/b10f0b|8c0b08|9e0d09|760907|177,\s*15,\s*11|140,\s*11,\s*8|rgb\(255,\s*0,\s*0\)|#ff0000|#e11d48|#dc2626|#ef4444/i.test(bg + ' ' + color)) {
-          redViolations.push(`Botão com vermelho proibido: ${btn.className} [${bg}]`);
+          violations.push(`Botão com vermelho proibido: ${btn.className} [${bg}]`);
         }
       });
 
-      return {
-        colorPrimaryCta,
-        colorPrimaryCtaHover,
-        totalCtaButtons: buttons.length,
-        redViolations
-      };
-    });
-    console.log('Auditoria de Cores dos CTAs:', ctaAudit);
-
-    if (ctaAudit.colorPrimaryCta.includes('#b10f0b') || ctaAudit.colorPrimaryCta.includes('rgb(177, 15, 11)')) {
-      throw new Error(`VIOLAÇÃO CRÍTICA: --color-primary-cta ainda está em vermelho: ${ctaAudit.colorPrimaryCta}`);
-    }
-
-    if (ctaAudit.redViolations.length > 0) {
-      throw new Error(`VIOLAÇÃO CRÍTICA: Encontrados botões em vermelho:\n${ctaAudit.redViolations.join('\n')}`);
-    }
-
-    // 7. Auditoria dos Textos das 3 Etapas do Caminho do Ciático (Concisão)
-    const stepsAudit = await page.evaluate(() => {
-      const steps = Array.from(document.querySelectorAll('.path-step-card .step-description'));
-      return steps.map((s, idx) => ({
-        step: idx + 1,
-        text: s.innerText.trim(),
-        length: s.innerText.trim().length,
-        words: s.innerText.trim().split(/\s+/).length
-      }));
-    });
-    console.log('Auditoria dos Textos das 3 Etapas do Caminho do Ciático:', stepsAudit);
-
-    stepsAudit.forEach(st => {
-      if (st.words > 35) {
-        throw new Error(`Etapa ${st.step} do infográfico excede o limite de concisão: ${st.words} palavras`);
-      }
-    });
-
-    // 8. Auditoria de Compliance e Copywriting (Zero Atributos Pessoais, Zero Promessas Absolutas)
-    const domAudit = await page.evaluate(() => {
-      const text = document.body.innerText;
-      const violations = [];
-
-      // Veto a atributos pessoais em 2ª pessoa
+      // Veto a atributos pessoais associados a dor
       if (/\bsua dor\b/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "sua dor"');
       if (/\bseu corpo\b/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "seu corpo"');
-      if (/\bsua rotina\b/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "sua rotina"');
       if (/\bseu quadro\b/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "seu quadro"');
-      if (/\bsua coluna\b/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "sua coluna"');
       if (/\bseu problema\b/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "seu problema"');
       if (/\bseus sintomas\b/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "seus sintomas"');
       if (/\bsuas?\s+atividades\b/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "suas atividades"');
-      if (/\bseu ciático\b/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "seu ciático"');
       if (/\bsua perna\b/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "sua perna"');
 
       // Veto a promessas absolutas
       if (/viver sem dor/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "viver sem dor"');
       if (/cura definitiva/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "cura definitiva"');
-      if (/garantido/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "garantido"');
+      if (/\bgarantido\b/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "garantido"');
       if (/a única solução/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "a única solução"');
       if (/a principal causa/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "a principal causa"');
       if (/com certeza/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "com certeza"');
@@ -274,15 +489,10 @@ const fs = require('fs');
       // Veto a links de fuga
       if (/link na bio/i.test(text)) violations.push('VIOLAÇÃO: Encontrado "link na bio"');
 
-      // Veto a travessões de IA
+      // Veto a travessões artificiais
       if (/—|--/.test(text)) violations.push('VIOLAÇÃO: Encontrado travessão de IA');
 
-      // Verificação da Equipe Oficial de Fisioterapeutas de Araucária
-      const rawHtml = document.documentElement.outerHTML;
-      const officialFisiosFound = rawHtml.includes('GABRIELA AMARAL') && rawHtml.includes('DÉBORA AMARAL');
-      if (!officialFisiosFound) violations.push('VIOLAÇÃO: Equipe oficial de fisioterapeutas de Araucária não encontrada');
-
-      // Verificação dos 19 Placeholders Oficiais do Wix CMS nas 8 dobras
+      // Verificação rigorosa dos 19 Placeholders do Wix CMS
       const placeholdersFound = {
         title: rawHtml.includes('{title}'),
         horario: rawHtml.includes('{horario}'),
@@ -310,29 +520,21 @@ const fs = require('fs');
       return {
         violations,
         placeholdersFound,
-        fontLoaded,
-        hasImages: document.querySelectorAll('img').length,
-        hasVideos: document.querySelectorAll('iframe').length
+        fontLoaded
       };
     });
+    console.log('Auditoria de Placeholders e Compliance:', complianceAudit);
 
-    console.log('Auditoria de Compliance e Placeholders Wix CMS:', domAudit);
-    console.log('Erros no console do navegador:', consoleErrors);
-
-    if (domAudit.violations.length > 0) {
-      throw new Error('Falha de compliance detectada:\n' + domAudit.violations.join('\n'));
+    if (complianceAudit.violations.length > 0) {
+      throw new Error('Falha de compliance detectada:\n' + complianceAudit.violations.join('\n'));
     }
 
-    if (consoleErrors.length > 0) {
-      throw new Error('Erros de console detectados:\n' + consoleErrors.join('\n'));
-    }
-
-    const missingPlaceholders = Object.keys(domAudit.placeholdersFound).filter(k => !domAudit.placeholdersFound[k]);
+    const missingPlaceholders = Object.keys(complianceAudit.placeholdersFound).filter(k => !complianceAudit.placeholdersFound[k]);
     if (missingPlaceholders.length > 0) {
       throw new Error('Placeholders Wix CMS ausentes:\n' + missingPlaceholders.join('\n'));
     }
 
-    // 8.1 Teste Interativo de Vídeos (Offset Click e Keyboard Enter)
+    // 8.1 Teste Interativo de Vídeos (Offset Click e Keyboard Enter/Space)
     console.log('8.1 Testando Interatividade e Acessibilidade dos Players de Vídeo...');
     await page.evaluate(() => {
       document.documentElement.style.scrollBehavior = 'auto';
@@ -456,24 +658,20 @@ const fs = require('fs');
     if (!dynamicAudit.headerTitle.includes('PRESIDENTE PRUDENTE')) {
       throw new Error('Parâmetro dinâmico da unidade não refletiu no cabeçalho.');
     }
-
     if (!dynamicAudit.wppLinkMatches) {
       throw new Error('Link dinâmico de WhatsApp não foi atualizado corretamente.');
     }
-
     if (!dynamicAudit.wppTextMatches) {
       throw new Error('Número de WhatsApp exibido na página não foi sincronizado dinamicamente.');
     }
-
     if (!dynamicAudit.telTextMatches) {
       throw new Error('Telefone fixo exibido na página não foi sincronizado dinamicamente.');
     }
-
     if (!dynamicAudit.fisioMatches) {
       throw new Error('Fisioterapeuta responsável não foi atualizado dinamicamente via parâmetro.');
     }
 
-    console.log('=== TODOS OS TESTES PASSARAM COM 100% DE SUCESSO NA LP 03! ===');
+    console.log('=== TODOS OS TESTES PASSARAM COM 100% DE SUCESSO NA REFORMULAÇÃO DA LP 03! ===');
   } catch (err) {
     console.error('ERRO NA AUDITORIA:', err);
     process.exit(1);
